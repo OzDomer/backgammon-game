@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backgammon</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- API Key Modal -->
+  <div id="api-modal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>Backgammon vs AI</h2>
+      <p>Enter your OpenAI API key to start the game:</p>
+      <input type="password" id="api-key-input" placeholder="sk-..." />
+      <button id="api-key-submit">Start Game</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div id="turn-indicator">Your turn — Roll the dice</div>
+
+    <div id="game-area">
+      <!-- Left bear-off tray (AI) -->
+      <div class="bear-off-tray" id="bear-off-ai">
+        <div class="tray-label">AI Off</div>
+        <div class="tray-checkers" id="tray-ai"></div>
+      </div>
+
+      <!-- Board -->
+      <div id="board">
+        <!-- Top row: points 13–24 (left to right) -->
+        <div id="top-row" class="point-row">
+          <!-- points 13–18 -->
+          <div class="half-row" id="top-left"></div>
+          <!-- bar top -->
+          <div class="bar" id="bar-top"></div>
+          <!-- points 19–24 -->
+          <div class="half-row" id="top-right"></div>
+        </div>
+
+        <!-- Bottom row: points 12–1 (left to right) -->
+        <div id="bottom-row" class="point-row">
+          <!-- points 12–7 -->
+          <div class="half-row" id="bottom-left"></div>
+          <!-- bar bottom -->
+          <div class="bar" id="bar-bottom"></div>
+          <!-- points 6–1 -->
+          <div class="half-row" id="bottom-right"></div>
+        </div>
+      </div>
+
+      <!-- Right bear-off tray (Human) -->
+      <div class="bear-off-tray" id="bear-off-human">
+        <div class="tray-label">Your Off</div>
+        <div class="tray-checkers" id="tray-human"></div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <button id="roll-btn">Roll Dice</button>
+      <div id="dice-area"></div>
+    </div>
+
+    <div id="ai-strategy-box" class="hidden">
+      <strong>AI Strategy:</strong> <span id="ai-strategy-text"></span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
