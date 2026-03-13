@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const HUMAN = 'human';
-const AI    = 'ai';
+const AI = 'ai';
 const BEAR_OFF_INDEX = 99;
 const MODEL = 'gpt-4o-mini';
 const DIE_FACES = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
@@ -24,11 +24,11 @@ let apiKey = '';
 */
 const buildInitialBoard = () => {
   const b = Array(24).fill(0);
-  b[23] =  2;   // human 24-point
-  b[12] =  5;   // human 13-point
-  b[7]  =  3;   // human 8-point
-  b[5]  =  5;   // human 6-point
-  b[0]  = -2;   // AI 24-point  (= human's 1-point)
+  b[23] = 2;   // human 24-point
+  b[12] = 5;   // human 13-point
+  b[7] = 3;   // human 8-point
+  b[5] = 5;   // human 6-point
+  b[0] = -2;   // AI 24-point  (= human's 1-point)
   b[11] = -5;   // AI 13-point  (= human's 12-point)
   b[16] = -3;   // AI 8-point   (= human's 17-point)
   b[18] = -5;   // AI 6-point   (= human's 19-point)
@@ -36,21 +36,21 @@ const buildInitialBoard = () => {
 };
 
 const createInitialState = () => ({
-  board:       buildInitialBoard(),
-  bar:         { human: 0, ai: 0 },
-  off:         { human: 0, ai: 0 },
-  dice:        [],
-  usedDice:    [],
+  board: buildInitialBoard(),
+  bar: { human: 0, ai: 0 },
+  off: { human: 0, ai: 0 },
+  dice: [],
+  usedDice: [],
   currentTurn: HUMAN,
-  isGameOver:  false,
-  winner:      null,
+  isGameOver: false,
+  winner: null,
 });
 
-let state    = createInitialState();
+let state = createInitialState();
 let dragState = null; // { fromIdx }
 
 // ── DOM Helpers ───────────────────────────────────────────────────────────────
-const $  = id => document.getElementById(id);
+const $ = id => document.getElementById(id);
 const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
 
 // ── API Key Setup ─────────────────────────────────────────────────────────────
@@ -75,10 +75,10 @@ const initApiModal = () => {
   Human home = bottom-right (points 1–6, indices 0–5)
   AI home    = top-right    (points 19–24, indices 18–23)
 */
-const TOP_LEFT_POINTS     = [13,14,15,16,17,18];
-const TOP_RIGHT_POINTS    = [19,20,21,22,23,24];
-const BOTTOM_LEFT_POINTS  = [12,11,10,9,8,7];
-const BOTTOM_RIGHT_POINTS = [6,5,4,3,2,1];
+const TOP_LEFT_POINTS = [13, 14, 15, 16, 17, 18];
+const TOP_RIGHT_POINTS = [19, 20, 21, 22, 23, 24];
+const BOTTOM_LEFT_POINTS = [12, 11, 10, 9, 8, 7];
+const BOTTOM_RIGHT_POINTS = [6, 5, 4, 3, 2, 1];
 
 const buildPointEl = (pointNum, isTop) => {
   const idx = pointNum - 1;
@@ -91,15 +91,15 @@ const buildPointEl = (pointNum, isTop) => {
 };
 
 const initBoard = () => {
-  $('top-left').innerHTML    = '';
-  $('top-right').innerHTML   = '';
+  $('top-left').innerHTML = '';
+  $('top-right').innerHTML = '';
   $('bottom-left').innerHTML = '';
-  $('bottom-right').innerHTML= '';
+  $('bottom-right').innerHTML = '';
 
-  TOP_LEFT_POINTS.forEach(n    => $('top-left').appendChild(buildPointEl(n, true)));
-  TOP_RIGHT_POINTS.forEach(n   => $('top-right').appendChild(buildPointEl(n, true)));
+  TOP_LEFT_POINTS.forEach(n => $('top-left').appendChild(buildPointEl(n, true)));
+  TOP_RIGHT_POINTS.forEach(n => $('top-right').appendChild(buildPointEl(n, true)));
   BOTTOM_LEFT_POINTS.forEach(n => $('bottom-left').appendChild(buildPointEl(n, false)));
-  BOTTOM_RIGHT_POINTS.forEach(n=> $('bottom-right').appendChild(buildPointEl(n, false)));
+  BOTTOM_RIGHT_POINTS.forEach(n => $('bottom-right').appendChild(buildPointEl(n, false)));
 
   setupDropTargets();
 };
@@ -121,8 +121,8 @@ const renderBoard = () => {
 
   state.board.forEach((val, idx) => {
     if (val === 0) return;
-    const count  = Math.abs(val);
-    const owner  = val > 0 ? HUMAN : AI;
+    const count = Math.abs(val);
+    const owner = val > 0 ? HUMAN : AI;
     const pointEl = document.querySelector(`.point[data-index="${idx}"]`);
     if (!pointEl) return;
 
@@ -133,10 +133,10 @@ const renderBoard = () => {
 
     Array.from({ length: visCount }).forEach((_, si) => {
       const chk = makeCheckerEl(owner);
-      chk.style.position  = 'absolute';
-      chk.style.left      = '50%';
+      chk.style.position = 'absolute';
+      chk.style.left = '50%';
       chk.style.transform = 'translateX(-50%)';
-      chk.style.zIndex    = si + 2;
+      chk.style.zIndex = si + 2;
       if (isBottom) {
         chk.style.bottom = `${4 + si * step}px`;
       } else {
@@ -150,7 +150,7 @@ const renderBoard = () => {
       if (isDraggable) {
         chk.draggable = true;
         chk.addEventListener('dragstart', onDragStart.bind(null, idx));
-        chk.addEventListener('dragend',   onDragEnd);
+        chk.addEventListener('dragend', onDragEnd);
       }
       pointEl.appendChild(chk);
     });
@@ -160,7 +160,7 @@ const renderBoard = () => {
 const makeCheckerEl = owner => el('div', `checker ${owner}`);
 
 const renderBar = () => {
-  $('bar-top').innerHTML    = '';
+  $('bar-top').innerHTML = '';
   $('bar-bottom').innerHTML = '';
 
   // AI on bar → top section
@@ -173,7 +173,7 @@ const renderBar = () => {
     if (isDraggable) {
       chk.draggable = true;
       chk.addEventListener('dragstart', onDragStart.bind(null, -1));
-      chk.addEventListener('dragend',   onDragEnd);
+      chk.addEventListener('dragend', onDragEnd);
     }
     $('bar-bottom').appendChild(chk);
   });
@@ -181,10 +181,10 @@ const renderBar = () => {
 
 const renderOffTrays = () => {
   $('tray-human').innerHTML = '';
-  $('tray-ai').innerHTML    = '';
-  const miniStyle = chk => { chk.style.width='26px'; chk.style.height='26px'; chk.style.marginBottom='-6px'; };
-  Array.from({ length: state.off.human }).forEach(() => { const c=makeCheckerEl(HUMAN); miniStyle(c); $('tray-human').appendChild(c); });
-  Array.from({ length: state.off.ai    }).forEach(() => { const c=makeCheckerEl(AI);    miniStyle(c); $('tray-ai').appendChild(c); });
+  $('tray-ai').innerHTML = '';
+  const miniStyle = chk => { chk.style.width = '26px'; chk.style.height = '26px'; chk.style.marginBottom = '-6px'; };
+  Array.from({ length: state.off.human }).forEach(() => { const c = makeCheckerEl(HUMAN); miniStyle(c); $('tray-human').appendChild(c); });
+  Array.from({ length: state.off.ai }).forEach(() => { const c = makeCheckerEl(AI); miniStyle(c); $('tray-ai').appendChild(c); });
 };
 
 const renderDice = () => {
@@ -223,7 +223,7 @@ const rollDice = () => {
 
 $('roll-btn').addEventListener('click', () => {
   if (state.currentTurn !== HUMAN || state.dice.length > 0 || state.isGameOver) return;
-  state.dice     = rollDice();
+  state.dice = rollDice();
   state.usedDice = [];
   $('roll-btn').disabled = true;
   renderAll();
@@ -246,8 +246,8 @@ const allHumanHome = s => {
 
 // Returns [{from, to, diceIndex}] for all legal human moves
 const getLegalMovesHuman = s => {
-  const moves   = [];
-  const dv      = availableDice(s);
+  const moves = [];
+  const dv = availableDice(s);
   const canBear = allHumanHome(s);
 
   const addMoveIfLegal = (fromIdx, v, di) => {
@@ -261,7 +261,7 @@ const getLegalMovesHuman = s => {
           moves.push({ from: fromIdx, to: BEAR_OFF_INDEX, diceIndex: di });
         } else {
           // Overshoot — legal only if no checker on a higher point
-          const highestOccupied = [5,4,3,2,1,0].find(p => s.board[p] > 0) ?? -1;
+          const highestOccupied = [5, 4, 3, 2, 1, 0].find(p => s.board[p] > 0) ?? -1;
           if (fromIdx === highestOccupied) moves.push({ from: fromIdx, to: BEAR_OFF_INDEX, diceIndex: di });
         }
       } else if (isOpenForHuman(s.board, toIdx)) {
@@ -289,6 +289,188 @@ const getLegalMovesHuman = s => {
 };
 
 const hasAnyLegalMove = (s, player) => player === HUMAN ? getLegalMovesHuman(s).length > 0 : true;
+
+// ── AI Legal Move Engine (validation + random fallback) ───────────────────────
+/*
+  Works in AI-perspective space: aiBoard[i] > 0 = AI checker, < 0 = opponent.
+  AI moves from index 0 → 23. diceValues is a plain int[] of remaining die values.
+  Returned moves use the same board indices and are compatible with applyAIMove().
+*/
+
+const allAIHome = (aiBoard, aiBarActive) => {
+  if (aiBarActive > 0) return false;
+  return aiBoard.every((v, i) => i >= 18 || v <= 0);
+};
+
+const isOpenForAI = (aiBoard, toIdx) => toIdx >= 0 && toIdx <= 23 && aiBoard[toIdx] >= -1;
+
+// Returns [{from, to, hit, diceIndex}] — diceIndex is 0-based into diceValues
+const getLegalMovesAI = (aiBoard, aiBarActive, diceValues) => {
+  const moves = [];
+  const canBear = allAIHome(aiBoard, aiBarActive);
+  const dv = diceValues.map((v, i) => ({ v, i }));
+
+  const tryFrom = (fromIdx) => {
+    dv.forEach(({ v, i }) => {
+      const toIdx = fromIdx + v;
+      if (canBear) {
+        if (toIdx >= 24) {
+          if (toIdx === 24) {
+            // Exact bear-off
+            moves.push({ from: fromIdx, to: BEAR_OFF_INDEX, hit: false, diceIndex: i });
+          } else {
+            // Overshoot — only legal from the lowest occupied home index (highest pip value)
+            const lowestOccupied = [18, 19, 20, 21, 22, 23].find(p => aiBoard[p] > 0) ?? -1;
+            if (fromIdx === lowestOccupied) moves.push({ from: fromIdx, to: BEAR_OFF_INDEX, hit: false, diceIndex: i });
+          }
+        } else if (isOpenForAI(aiBoard, toIdx)) {
+          moves.push({ from: fromIdx, to: toIdx, hit: aiBoard[toIdx] === -1, diceIndex: i });
+        }
+      } else if (isOpenForAI(aiBoard, toIdx)) {
+        moves.push({ from: fromIdx, to: toIdx, hit: aiBoard[toIdx] === -1, diceIndex: i });
+      }
+    });
+  };
+
+  if (aiBarActive > 0) {
+    // Bar entry: die v → land at index v-1 (die 1 → idx 0, die 6 → idx 5)
+    dv.forEach(({ v, i }) => {
+      const toIdx = v - 1;
+      if (isOpenForAI(aiBoard, toIdx)) moves.push({ from: -1, to: toIdx, hit: aiBoard[toIdx] === -1, diceIndex: i });
+    });
+  } else {
+    aiBoard.forEach((val, fromIdx) => { if (val > 0) tryFrom(fromIdx); });
+  }
+  return moves;
+};
+
+// Greedily picks random legal moves, consuming max possible dice
+const pickRandomAIMoves = (aiBoard, aiBarActive, diceValues) => {
+  const board = [...aiBoard];
+  let barActive = aiBarActive;
+  let remaining = [...diceValues];
+  const chosen = [];
+
+  let keepGoing = true;
+  while (keepGoing && remaining.length > 0) {
+    const legal = getLegalMovesAI(board, barActive, remaining);
+    if (legal.length === 0) { keepGoing = false; break; }
+    const move = legal[Math.floor(Math.random() * legal.length)];
+    chosen.push({ from: move.from, to: move.to, hit: move.hit });
+    // Apply to simulation
+    if (move.from === -1) { barActive--; } else { board[move.from]--; }
+    if (move.to === BEAR_OFF_INDEX) {
+      // nothing extra
+    } else {
+      if (board[move.to] === -1) board[move.to] = 0;
+      board[move.to]++;
+    }
+    remaining = remaining.filter((_, i) => i !== move.diceIndex);
+  }
+  return chosen;
+};
+
+/*
+  Validates the AI's proposed move sequence against five rules:
+  1. Bar Priority       — must enter from bar before any other move
+  2. Source Check       — AI checker must exist at 'from'
+  3. Dice Consistency   — a remaining die must cover the move distance
+  4. Destination Check  — 'to' must not be blocked by 2+ opponent checkers
+  5. Bearing Off        — can only bear off when all checkers are home
+  After all moves: Forced Exhaustion — if dice remain, no legal moves may exist.
+*/
+const validateAIMoveSequence = (aiBoard, aiBarActive, diceValues, moves) => {
+  const board = [...aiBoard];
+  let barActive = aiBarActive;
+  let remaining = [...diceValues]; // consumed as we go
+  const errors = [];
+
+  if (!Array.isArray(moves)) return { isValid: false, errors: ['moves is not an array'] };
+
+  // Empty move list is only valid if no legal moves exist
+  if (moves.length === 0) {
+    const possible = getLegalMovesAI(board, barActive, remaining);
+    if (possible.length > 0) return { isValid: false, errors: ['Empty moves but legal moves exist'] };
+    return { isValid: true, errors };
+  }
+
+  moves.forEach((move, mi) => {
+    if (errors.length) return; // stop on first failure
+    const { from, to } = move;
+    const tag = `Move[${mi}] (${from}→${to})`;
+
+    // ── 1. Bar Priority ──────────────────────────────────────────────────────
+    if (barActive > 0 && from !== -1) {
+      errors.push(`${tag}: bar priority violated — must enter from bar (barActive=${barActive})`);
+      return;
+    }
+
+    // ── 2. Source Check ──────────────────────────────────────────────────────
+    if (from === -1) {
+      if (barActive <= 0) { errors.push(`${tag}: from=-1 but bar is empty`); return; }
+    } else {
+      if (from < 0 || from > 23 || board[from] <= 0) {
+        errors.push(`${tag}: no AI checker at index ${from} (board[${from}]=${board[from]})`);
+        return;
+      }
+    }
+
+    // ── 3 & 4. Dice Consistency + Destination Check ──────────────────────────
+    const canBear = allAIHome(board, barActive);
+    let usedDieIdx = -1;
+
+    if (to === BEAR_OFF_INDEX) {
+      // ── 5. Bearing Off Validation ──────────────────────────────────────────
+      if (!canBear) { errors.push(`${tag}: bear-off attempt but not all AI checkers are home`); return; }
+      if (from === -1) { errors.push(`${tag}: cannot bear off from bar`); return; }
+      const exactDie = 24 - from; // die needed for exact removal
+      const lowestOccupied = [18, 19, 20, 21, 22, 23].find(p => board[p] > 0) ?? -1;
+      // Accept exact die OR any larger die if from is the lowest occupied point
+      const matchIdx = remaining.findIndex(v => v === exactDie || (v > exactDie && from === lowestOccupied));
+      if (matchIdx === -1) { errors.push(`${tag}: no valid die for bearing off from index ${from}`); return; }
+      usedDieIdx = matchIdx;
+    } else if (from === -1) {
+      // Bar entry: die must equal to + 1
+      const needed = to + 1;
+      const matchIdx = remaining.indexOf(needed);
+      if (matchIdx === -1) { errors.push(`${tag}: no die value ${needed} for bar entry to index ${to}`); return; }
+      // Destination check
+      if (!isOpenForAI(board, to)) { errors.push(`${tag}: destination index ${to} is blocked`); return; }
+      usedDieIdx = matchIdx;
+    } else {
+      // Normal move: die = to - from
+      const needed = to - from;
+      if (needed <= 0 || needed > 6) { errors.push(`${tag}: invalid distance ${needed}`); return; }
+      const matchIdx = remaining.indexOf(needed);
+      if (matchIdx === -1) { errors.push(`${tag}: no die value ${needed} available`); return; }
+      if (!isOpenForAI(board, to)) { errors.push(`${tag}: destination index ${to} is blocked`); return; }
+      usedDieIdx = matchIdx;
+    }
+
+    // ── Apply move to simulation ──────────────────────────────────────────────
+    if (from === -1) { barActive--; } else { board[from]--; }
+    if (to === BEAR_OFF_INDEX) {
+      // bear-off — no board update needed
+    } else {
+      if (board[to] === -1) board[to] = 0; // hit
+      board[to]++;
+    }
+    remaining = remaining.filter((_, i) => i !== usedDieIdx);
+  });
+
+  if (errors.length) return { isValid: false, errors };
+
+  // ── Forced Move Exhaustion Check ─────────────────────────────────────────────
+  if (remaining.length > 0) {
+    const moreMoves = getLegalMovesAI(board, barActive, remaining);
+    if (moreMoves.length > 0) {
+      errors.push(`Unused dice [${remaining.join(',')}] remain but ${moreMoves.length} legal move(s) still exist`);
+      return { isValid: false, errors };
+    }
+  }
+
+  return { isValid: true, errors };
+};
 
 // ── Drag & Drop ───────────────────────────────────────────────────────────────
 const onDragStart = (fromIdx, e) => {
@@ -364,8 +546,8 @@ const applyHumanMove = ({ from, to, diceIndex }) => {
 };
 
 const endHumanTurn = () => {
-  state.dice       = [];
-  state.usedDice   = [];
+  state.dice = [];
+  state.usedDice = [];
   state.currentTurn = AI;
   $('roll-btn').disabled = false;
   renderAll();
@@ -376,42 +558,72 @@ const endHumanTurn = () => {
 const checkWin = (s, player) => player === HUMAN ? s.off.human === 15 : s.off.ai === 15;
 
 // ── AI Turn ───────────────────────────────────────────────────────────────────
+const MAX_AI_RETRIES = 3;
+
 const doAITurn = async () => {
   const dice = rollDice();
-  state.dice     = dice;
+  state.dice = dice;
   state.usedDice = [];
   renderDice();
 
-  /*
-    AI perspective board: same indices (0–23), but flip signs.
-    AI checkers are negative in our board → positive in AI board.
-    AI moves from index 0 → 23 (same direction as our array).
-  */
   const aiBoard = state.board.map(v => -v);
-  const aiBar   = { active: state.bar.ai, opponent: state.bar.human };
-  const aiOff   = { active: state.off.ai, opponent: state.off.human };
+  const aiBar = { active: state.bar.ai, opponent: state.bar.human };
+  const aiOff = { active: state.off.ai, opponent: state.off.human };
+  const boardJson = JSON.stringify({ board: aiBoard, dice, bar: aiBar, off: aiOff });
 
-  try {
-    const response = await callOpenAI(JSON.stringify({ board: aiBoard, dice, bar: aiBar, off: aiOff }));
-    const parsed   = parseAIResponse(response);
-    $('ai-strategy-text').textContent = parsed.strategy_short || '';
-    $('ai-strategy-box').classList.remove('hidden');
-    await animateAIMoves(parsed.moves || []);
-    if (checkWin(state, AI)) { state.isGameOver = true; state.winner = AI; }
-  } catch (err) {
-    console.error('AI move error:', err);
-    $('ai-strategy-text').textContent = 'AI error: ' + err.message;
-    $('ai-strategy-box').classList.remove('hidden');
+  let validMoves = null;
+  let strategyText = '';
+  let lastError = '';
+
+  // Attempt up to MAX_AI_RETRIES times; on each retry pass the validation error back
+  await Array.from({ length: MAX_AI_RETRIES }).reduce(
+    (chain, _, attempt) => chain.then(async () => {
+      if (validMoves !== null) return; // already succeeded
+      try {
+        const response = await callOpenAI(boardJson, attempt > 0 ? lastError : '');
+        const parsed = parseAIResponse(response);
+        const moves = parsed.moves || [];
+        const { isValid, errors } = validateAIMoveSequence(aiBoard, aiBar.active, dice, moves);
+        if (isValid) {
+          validMoves = moves;
+          strategyText = parsed.strategy_short || '';
+        } else {
+          lastError = errors.join(' | ');
+          console.warn(`AI move validation failed (attempt ${attempt + 1}): ${lastError}`);
+        }
+      } catch (err) {
+        lastError = err.message;
+        console.error(`AI API/parse error (attempt ${attempt + 1}):`, err);
+      }
+    }),
+    Promise.resolve()
+  );
+
+  // Fallback: generate random legal moves if all retries failed
+  if (validMoves === null) {
+    console.warn(`All ${MAX_AI_RETRIES} AI attempts failed — using random fallback`);
+    validMoves = pickRandomAIMoves(aiBoard, aiBar.active, dice);
+    strategyText = `(fallback after ${MAX_AI_RETRIES} failed attempts)`;
   }
 
-  state.dice        = [];
-  state.usedDice    = [];
+  $('ai-strategy-text').textContent = strategyText;
+  $('ai-strategy-box').classList.remove('hidden');
+
+  try {
+    await animateAIMoves(validMoves);
+    if (checkWin(state, AI)) { state.isGameOver = true; state.winner = AI; }
+  } catch (err) {
+    console.error('Animation error:', err);
+  }
+
+  state.dice = [];
+  state.usedDice = [];
   state.currentTurn = HUMAN;
   $('roll-btn').disabled = false;
   renderAll();
 };
 
-const callOpenAI = async boardJson => {
+const callOpenAI = async (boardJson, errorContext = '') => {
   const systemPrompt = `Role: You are a professional Backgammon AI engine. Your goal is to analyze the board state and return the optimal legal move.
 Game Rules & Logic:
 - Movement: You always move checkers from lower indices toward higher indices (0 → 23 → 99).
@@ -421,7 +633,7 @@ Game Rules & Logic:
 - Bearing Off: You may only move checkers to index 99 if all your remaining checkers are located between indices 18 and 23.
 - Forced Moves: You must use the maximum number of dice pips possible. If you can only use one die, you must use the larger one.
 Board State Format: The user will provide a JSON object:
-- board: Array of 24 integers. Positive integers are your checkers. Negative integers are your opponent's.
+- board: Array of 24 integers. Positive integers are your checkers. Negative integers are your opponent's. the only in bound moves are 0-23 use 99 for bearing off
 - dice: Array of 2 integers representing the roll.
 - bar: Object with active (your checkers on bar) and opponent (theirs).
 - off: Object with active (your checkers removed) and opponent (theirs).
@@ -440,7 +652,10 @@ JSON Schema:
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: MODEL,
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: boardJson }],
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: errorContext ? `${boardJson}\n\nYour previous response was rejected. Validation error: ${errorContext}\nPlease return a corrected legal move sequence.` : boardJson },
+      ],
       temperature: 0.2,
     }),
   });
@@ -449,7 +664,9 @@ JSON Schema:
     throw new Error(err?.error?.message || `HTTP ${res.status}`);
   }
   const data = await res.json();
-  return data.choices[0].message.content;
+  const content = data.choices[0].message.content;
+  console.log('[AI response]', content);
+  return content;
 };
 
 const parseAIResponse = raw => JSON.parse(raw.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim());
