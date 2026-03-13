@@ -625,21 +625,35 @@ const doAITurn = async () => {
 
 const callOpenAI = async (boardJson, errorContext = '') => {
   const systemPrompt = `Role: You are a professional Backgammon AI engine. Your goal is to analyze the board state and return the optimal legal move.
+
+CRITICAL — Direction of Play:
+YOU (the AI) always move checkers from LOWER indices toward HIGHER indices: 0 → 1 → 2 → ... → 23 → bear off (99).
+A move from index 5 with die value 3 lands on index 8. A move from index 20 with die value 4 lands on index 24 which means bear off (99).
+NEVER move backward (never decrease the index). Every "to" must be greater than "from" (or 99 for bear-off).
+
+Starting Position Example (game start, your checkers are positive):
+board: [-2,0,0,0,0,5, 0,3,0,0,0,-5, 5,0,0,0,-3,0,-5,0,0,0,0,2]
+  - Your checkers (positive): 5 at index 5, 3 at index 7, 5 at index 12, 2 at index 23
+  - Opponent checkers (negative): 2 at index 0, 5 at index 11, 3 at index 16, 5 at index 18
+  - Your goal: move all your checkers from their current indices toward index 23, then bear off to 99.
+  - Your home board for bearing off is indices 18–23.
+
 Game Rules & Logic:
-- Movement: You always move checkers from lower indices toward higher indices (0 → 23 → 99).
-- Blocking: You cannot land on a point occupied by 2 or more opponent checkers (negative integers).
-- Hitting: If you land on a point with exactly -1, the opponent's checker is moved to their bar. You must set "hit": true in your response.
-- The Bar: If your bar.active is > 0, you must move those checkers back onto the board (entering at indices 0–5) before moving any other checkers.
-- Bearing Off: You may only move checkers to index 99 if all your remaining checkers are located between indices 18 and 23.
-- Forced Moves: You must use the maximum number of dice pips possible. If you can only use one die, you must use the larger one.
-Board State Format: The user will provide a JSON object:
-- board: Array of 24 integers. Positive integers are your checkers. Negative integers are your opponent's. the only in bound moves are 0-23 use 99 for bearing off
-- dice: Array of 2 integers representing the roll.
-- bar: Object with active (your checkers on bar) and opponent (theirs).
-- off: Object with active (your checkers removed) and opponent (theirs).
-Response Format: Return a JSON object only. No conversational text, no markdown code blocks.
-- Variable Move Count: 2 moves for standard rolls, 4 for doubles. If blocked, return only the possible legal moves (0–4).
-- Special Indices: Use -1 for from when entering from the bar. Use 99 for to when bearing off. Use 0–23 for board points.
+- Movement: Always increase the index. from=5, die=4 → to=9. from=21, die=3 → to=24 means bear off (use 99).
+- Blocking: You cannot land on a point where the opponent has 2 or more checkers (values ≤ -2).
+- Hitting: If you land on a point with exactly -1 (one opponent checker), it is hit and goes to the bar. Set "hit": true.
+- The Bar: If bar.active > 0, your first move(s) must re-enter from the bar using from=-1, landing at indices 0–5 (die value maps to index: die 1 → index 0, die 2 → index 1, ..., die 6 → index 5).
+- Bearing Off: You may only use to=99 when ALL your checkers (board + bar) are at indices 18–23. Exact removal: from + die = 24. Overshoot: die > (24 - from) is only legal from the lowest-indexed occupied point.
+- Forced Moves: Use the maximum number of dice pips possible. With a standard roll, play both dice if legal. With doubles, play all four. If only one die can be played, play the larger one.
+
+Board State Format (JSON sent by user):
+- board: Array of 24 integers (index 0–23). Positive = your checkers. Negative = opponent. Valid move destinations: 0–23 or 99 (bear-off only).
+- dice: Array of integers (2 for normal, 4 for doubles).
+- bar: { active: your checkers on bar, opponent: their checkers on bar }
+- off: { active: your checkers borne off, opponent: theirs }
+
+Response Format: Return a JSON object ONLY. No markdown, no code fences, no explanation text.
+- moves array length: 2 for normal roll, 4 for doubles, fewer only if legally blocked.
 JSON Schema:
 {
   "move_notation": "string",

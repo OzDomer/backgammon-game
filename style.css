@@ -1,5 +1,11 @@
 /* ===== Reset & Base ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: #1a0a00;
@@ -13,26 +19,42 @@ body {
   gap: 10px;
 }
 
-.hidden { display: none !important; }
+.hidden {
+  display: none !important;
+}
 
 /* ===== Modal ===== */
 .modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: flex; align-items: center; justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 1000;
 }
+
 .modal-box {
   background: #2c1206;
   border: 2px solid #8b4513;
   border-radius: 12px;
   padding: 36px 40px;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   min-width: 340px;
   text-align: center;
 }
-.modal-box h2 { font-size: 1.6rem; color: #f0c060; }
-.modal-box p  { color: #d0b080; }
+
+.modal-box h2 {
+  font-size: 1.6rem;
+  color: #f0c060;
+}
+
+.modal-box p {
+  color: #d0b080;
+}
+
 .modal-box input {
   padding: 10px 14px;
   border-radius: 6px;
@@ -41,6 +63,7 @@ body {
   color: #f0e0c0;
   font-size: 1rem;
 }
+
 .modal-box button {
   padding: 10px;
   background: #8b4513;
@@ -52,7 +75,10 @@ body {
   font-weight: bold;
   transition: background 0.2s;
 }
-.modal-box button:hover { background: #a0521a; }
+
+.modal-box button:hover {
+  background: #a0521a;
+}
 
 /* ===== Turn Indicator ===== */
 #turn-indicator {
@@ -85,12 +111,14 @@ body {
   gap: 4px;
   min-height: 520px;
 }
+
 .tray-label {
   font-size: 0.65rem;
   color: #a07040;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
 .tray-checkers {
   display: flex;
   flex-direction: column;
@@ -114,10 +142,12 @@ body {
   position: relative;
   /* Middle divider line */
 }
+
 #board::after {
   content: '';
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   top: 50%;
   height: 4px;
   background: #1e0d03;
@@ -135,8 +165,8 @@ body {
 .half-row {
   display: flex;
   flex: 1;
-  gap: 20px;
-  padding: 0 10px;
+  gap: 2px;
+  padding: 0 4px;
 }
 
 /* ===== Bar ===== */
@@ -153,14 +183,22 @@ body {
   position: relative;
   z-index: 10;
 }
-#bar-top    { justify-content: flex-start;  padding-top: 8px; }
-#bar-bottom { justify-content: flex-end;    padding-bottom: 8px; }
+
+#bar-top {
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+
+#bar-bottom {
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
 
 /* ===== Points (triangles) ===== */
 .point {
   position: relative;
   flex: 1;
-  min-width: 48px;
+  min-width: 0;
   max-width: 58px;
   overflow: visible;
 }
@@ -169,43 +207,59 @@ body {
 .point-bottom::before {
   content: '';
   position: absolute;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: 210px;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   z-index: 0;
 }
+
 /* Triangle for top row: tip points DOWN toward center */
 .point-top::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 210px;
   clip-path: polygon(0% 0%, 100% 0%, 50% 100%);
   z-index: 0;
 }
 
-.point-odd::before  { background: #c0392b; }
-.point-even::before { background: #e8d5a0; }
+.point-odd::before {
+  background: #c0392b;
+}
+
+.point-even::before {
+  background: #e8d5a0;
+}
 
 /* Point number label */
 .point-num {
   position: absolute;
   font-size: 0.58rem;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255, 255, 255, 0.45);
   z-index: 1;
   pointer-events: none;
   left: 50%;
   transform: translateX(-50%);
 }
-.point-bottom .point-num { bottom: 2px; }
-.point-top    .point-num { top: 2px; }
+
+.point-bottom .point-num {
+  bottom: 2px;
+}
+
+.point-top .point-num {
+  top: 2px;
+}
 
 /* ===== Checkers ===== */
 .checker {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid rgba(0,0,0,0.35);
+  border: 2px solid rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,32 +270,40 @@ body {
   flex-shrink: 0;
   cursor: grab;
   user-select: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.3);
   transition: box-shadow 0.15s;
 }
-.checker:active { cursor: grabbing; }
+
+.checker:active {
+  cursor: grabbing;
+}
+
 .checker.human {
   background: radial-gradient(circle at 35% 35%, #fff8e1, #d4a017);
   color: #5a2d0c;
 }
+
 .checker.ai {
   background: radial-gradient(circle at 35% 35%, #555, #111);
   color: #ddd;
 }
+
 .checker.dragging {
   opacity: 0.45;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.7);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
 /* Stack count badge */
 .checker-count {
   position: absolute;
-  bottom: 0; right: 0;
-  background: rgba(0,0,0,0.65);
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.65);
   color: #fff;
   font-size: 0.55rem;
   border-radius: 50%;
-  width: 15px; height: 15px;
+  width: 15px;
+  height: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,19 +311,25 @@ body {
 }
 
 /* ===== Legal Move Highlights ===== */
-.point.legal-target { outline: 3px solid #00ff88; outline-offset: -2px; z-index: 5; }
+.point.legal-target {
+  outline: 3px solid #00ff88;
+  outline-offset: -2px;
+  z-index: 5;
+}
+
 .point.legal-target::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(0,255,136,0.15);
+  background: rgba(0, 255, 136, 0.15);
   z-index: 4;
   pointer-events: none;
 }
+
 .bear-off-tray.legal-target {
   outline: 3px solid #00ff88;
   outline-offset: -2px;
-  background: rgba(0,255,136,0.15);
+  background: rgba(0, 255, 136, 0.15);
 }
 
 /* ===== Controls ===== */
@@ -270,6 +338,7 @@ body {
   align-items: center;
   gap: 16px;
 }
+
 #roll-btn {
   padding: 10px 32px;
   background: #8b4513;
@@ -281,13 +350,25 @@ body {
   font-weight: bold;
   transition: background 0.2s;
 }
-#roll-btn:hover:not(:disabled) { background: #a0521a; }
-#roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#roll-btn:hover:not(:disabled) {
+  background: #a0521a;
+}
+
+#roll-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 /* ===== Dice ===== */
-#dice-area { display: flex; gap: 10px; }
+#dice-area {
+  display: flex;
+  gap: 10px;
+}
+
 .die {
-  width: 46px; height: 46px;
+  width: 46px;
+  height: 46px;
   background: #fff;
   color: #222;
   border-radius: 8px;
@@ -296,10 +377,11 @@ body {
   justify-content: center;
   font-size: 1.6rem;
   font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   border: 2px solid #ccc;
   transition: opacity 0.3s, background 0.3s;
 }
+
 .die.used {
   opacity: 0.3;
   background: #999;
@@ -316,4 +398,7 @@ body {
   max-width: 860px;
   text-align: center;
 }
-#ai-strategy-box strong { color: #f0c060; }
+
+#ai-strategy-box strong {
+  color: #f0c060;
+}
