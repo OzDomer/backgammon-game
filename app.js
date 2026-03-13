@@ -225,6 +225,7 @@ $('roll-btn').addEventListener('click', () => {
   if (state.currentTurn !== HUMAN || state.dice.length > 0 || state.isGameOver) return;
   state.dice = rollDice();
   state.usedDice = [];
+  console.log('[Human turn] dice:', state.dice, '| board:', [...state.board], '| bar:', { ...state.bar }, '| off:', { ...state.off });
   $('roll-btn').disabled = true;
   renderAll();
   if (!hasAnyLegalMove(state, HUMAN)) {
@@ -390,27 +391,31 @@ const validateAIMoveSequence = (aiBoard, aiBarActive, diceValues, moves) => {
   // Empty move list is only valid if no legal moves exist
   if (moves.length === 0) {
     const possible = getLegalMovesAI(board, barActive, remaining);
-    if (possible.length > 0) return { isValid: false, errors: ['Empty moves but legal moves exist'] };
+    if (possible.length > 0) {
+      const legalSummary = possible.slice(0, 3).map(m => `${m.from}→${m.to}`).join(', ');
+      return { isValid: false, errors: [`Empty moves but legal moves exist (dice=[${remaining.join(',')}], e.g. ${legalSummary})`] };
+    }
     return { isValid: true, errors };
   }
 
   moves.forEach((move, mi) => {
     if (errors.length) return; // stop on first failure
     const { from, to } = move;
-    const tag = `Move[${mi}] (${from}→${to})`;
+    const tag = `Move[${mi}] (${from}→${to}) dice=[${remaining.join(',')}]`;
 
     // ── 1. Bar Priority ──────────────────────────────────────────────────────
     if (barActive > 0 && from !== -1) {
-      errors.push(`${tag}: bar priority violated — must enter from bar (barActive=${barActive})`);
+      const barEntries = remaining.map(v => `die ${v} → index ${v - 1}`).join(', ');
+      errors.push(`${tag}: bar priority violated — you have ${barActive} checker(s) on the bar and must enter first. Available bar entries: ${barEntries}`);
       return;
     }
 
     // ── 2. Source Check ──────────────────────────────────────────────────────
     if (from === -1) {
-      if (barActive <= 0) { errors.push(`${tag}: from=-1 but bar is empty`); return; }
+      if (barActive <= 0) { errors.push(`${tag}: from=-1 but bar is empty — do not use from=-1 unless bar.active > 0`); return; }
     } else {
       if (from < 0 || from > 23 || board[from] <= 0) {
-        errors.push(`${tag}: no AI checker at index ${from} (board[${from}]=${board[from]})`);
+        errors.push(`${tag}: no AI checker at index ${from} (board[${from}]=${board[from]}) — pick a source index with a positive value`);
         return;
       }
     }
@@ -421,29 +426,51 @@ const validateAIMoveSequence = (aiBoard, aiBarActive, diceValues, moves) => {
 
     if (to === BEAR_OFF_INDEX) {
       // ── 5. Bearing Off Validation ──────────────────────────────────────────
-      if (!canBear) { errors.push(`${tag}: bear-off attempt but not all AI checkers are home`); return; }
-      if (from === -1) { errors.push(`${tag}: cannot bear off from bar`); return; }
-      const exactDie = 24 - from; // die needed for exact removal
+      if (!canBear) {
+        const outside = board.map((v, i) => v > 0 && i < 18 ? i : -1).filter(i => i >= 0);
+        errors.push(`${tag}: bear-off attempt but not all AI checkers are home — checkers still outside home board at indices: [${outside.join(',')}]`);
+        return;
+      }
+      if (from === -1) { errors.push(`${tag}: cannot bear off from bar — enter the bar checker onto the board first`); return; }
+      const exactDie = 24 - from;
       const lowestOccupied = [18, 19, 20, 21, 22, 23].find(p => board[p] > 0) ?? -1;
-      // Accept exact die OR any larger die if from is the lowest occupied point
       const matchIdx = remaining.findIndex(v => v === exactDie || (v > exactDie && from === lowestOccupied));
-      if (matchIdx === -1) { errors.push(`${tag}: no valid die for bearing off from index ${from}`); return; }
+      if (matchIdx === -1) {
+        errors.push(`${tag}: no valid die to bear off from index ${from} — need die=${exactDie} (exact) or a larger die if ${from} is the lowest occupied point (lowest=${lowestOccupied}); available dice=[${remaining.join(',')}]`);
+        return;
+      }
       usedDieIdx = matchIdx;
     } else if (from === -1) {
       // Bar entry: die must equal to + 1
       const needed = to + 1;
       const matchIdx = remaining.indexOf(needed);
-      if (matchIdx === -1) { errors.push(`${tag}: no die value ${needed} for bar entry to index ${to}`); return; }
-      // Destination check
-      if (!isOpenForAI(board, to)) { errors.push(`${tag}: destination index ${to} is blocked`); return; }
+      if (matchIdx === -1) {
+        errors.push(`${tag}: bar entry to index ${to} requires die=${needed} but available dice=[${remaining.join(',')}] — use die value = target index + 1`);
+        return;
+      }
+      if (!isOpenForAI(board, to)) {
+        const oppCount = Math.abs(board[to]);
+        errors.push(`${tag}: bar entry target index ${to} is blocked by ${oppCount} opponent checker(s) — occupied by 2+ opponent checkers, cannot land there; available dice=[${remaining.join(',')}]`);
+        return;
+      }
       usedDieIdx = matchIdx;
     } else {
       // Normal move: die = to - from
       const needed = to - from;
-      if (needed <= 0 || needed > 6) { errors.push(`${tag}: invalid distance ${needed}`); return; }
+      if (needed <= 0 || needed > 6) {
+        errors.push(`${tag}: invalid move distance ${needed} (must be 1–6) — "to" must equal "from" + die value; available dice=[${remaining.join(',')}]`);
+        return;
+      }
       const matchIdx = remaining.indexOf(needed);
-      if (matchIdx === -1) { errors.push(`${tag}: no die value ${needed} available`); return; }
-      if (!isOpenForAI(board, to)) { errors.push(`${tag}: destination index ${to} is blocked`); return; }
+      if (matchIdx === -1) {
+        errors.push(`${tag}: move requires die=${needed} but available dice=[${remaining.join(',')}] — choose a destination reachable with one of the available dice`);
+        return;
+      }
+      if (!isOpenForAI(board, to)) {
+        const oppCount = Math.abs(board[to]);
+        errors.push(`${tag}: destination index ${to} is occupied by ${oppCount} opponent checker(s) — occupied by 2+ opponent checkers, cannot hit; available dice=[${remaining.join(',')}]`);
+        return;
+      }
       usedDieIdx = matchIdx;
     }
 
@@ -464,7 +491,8 @@ const validateAIMoveSequence = (aiBoard, aiBarActive, diceValues, moves) => {
   if (remaining.length > 0) {
     const moreMoves = getLegalMovesAI(board, barActive, remaining);
     if (moreMoves.length > 0) {
-      errors.push(`Unused dice [${remaining.join(',')}] remain but ${moreMoves.length} legal move(s) still exist`);
+      const legalSummary = moreMoves.slice(0, 3).map(m => `${m.from}→${m.to} (die ${m.to === BEAR_OFF_INDEX ? 24 - m.from : m.to - m.from})`).join(', ');
+      errors.push(`Unused dice [${remaining.join(',')}] remain but ${moreMoves.length} legal move(s) still exist — you must use as many dice as possible. Still playable: ${legalSummary}`);
       return { isValid: false, errors };
     }
   }
@@ -570,6 +598,7 @@ const doAITurn = async () => {
   const aiBar = { active: state.bar.ai, opponent: state.bar.human };
   const aiOff = { active: state.off.ai, opponent: state.off.human };
   const boardJson = JSON.stringify({ board: aiBoard, dice, bar: aiBar, off: aiOff });
+  console.log('[AI turn] dice:', dice, '| board:', [...state.board], '| bar:', { ...state.bar }, '| off:', { ...state.off });
 
   let validMoves = null;
   let strategyText = '';
@@ -639,9 +668,9 @@ board: [-2,0,0,0,0,5, 0,3,0,0,0,-5, 5,0,0,0,-3,0,-5,0,0,0,0,2]
   - Your home board for bearing off is indices 18–23.
 
 Game Rules & Logic:
-- Movement: Always increase the index. from=5, die=4 → to=9. from=21, die=3 → to=24 means bear off (use 99).
-- Blocking: You cannot land on a point where the opponent has 2 or more checkers (values ≤ -2).
-- Hitting: If you land on a point with exactly -1 (one opponent checker), it is hit and goes to the bar. Set "hit": true.
+- Movement: Always increase the index. from=5, die=4 → to=9. from=21, die=3 → - Blocking: You cannot land on a point where the opponent has 2 or more checkers (values >= 2).to=24 means bear off (use 99).
+
+- Hitting: If you land on a point with exactly 1 (one opponent checker), it is hit and goes to the bar. Set "hit": true.
 - The Bar: If bar.active > 0, your first move(s) must re-enter from the bar using from=-1, landing at indices 0–5 (die value maps to index: die 1 → index 0, die 2 → index 1, ..., die 6 → index 5).
 - Bearing Off: You may only use to=99 when ALL your checkers (board + bar) are at indices 18–23. Exact removal: from + die = 24. Overshoot: die > (24 - from) is only legal from the lowest-indexed occupied point.
 - Forced Moves: Use the maximum number of dice pips possible. With a standard roll, play both dice if legal. With doubles, play all four. If only one die can be played, play the larger one.
