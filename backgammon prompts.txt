@@ -1,0 +1,176 @@
+The objective is to create a web based backgammon game
+
+Ingredients
+index.html
+style.css
+app.js
+Javascript rules
+Never use a for-of loop, always use HOF instead
+boolean variables must start with “is” prefix
+Never use native javascript functions. Always use arrow functions assigned into consts
+Game rules
+The game is always human vs open ai api
+Don't save the api key in the code! Prompt for it on page startup
+Use model gpt 4.5
+Human plays using drag & drop
+
+The Setup and Goal
+The Board: Each player has 15 checkers of their color. The board consists of 24 narrow triangles called points.
+
+The Objective: You must move all your checkers into your own home board and then "bear them off" (remove them from the board). The first player to remove all their checkers wins.
+
+Movement Direction: Players move their checkers in opposite directions—one clockwise, the other counter-clockwise—following a horseshoe path.
+
+Movement Rules
+The Dice: On your turn, roll two dice. each player must use the two moves indicated by the dice each dice represents one move (unless no legal moves are present) the player can use both moves to move one checker
+
+Doubles: If you roll "doubles" (e.g., two 5s), you get to move four times the value shown on a single die.
+
+Open Points: You can only move a checker to an "open" point. A point is open if it has:
+
+No checkers on it.
+
+Only your own checkers on it.
+
+Exactly one of your opponent’s checkers.
+
+Blocked Points: If an opponent has two or more checkers on a point, that point is "closed." You cannot land there, even temporarily during a combined move.
+
+forced moves
+Mandatory Play: If you roll the dice and there is any legal move possible, you must take it. You cannot decline a move because it would leave a "blot" (a single checker) vulnerable or ruin your defensive structure.
+
+Both Dice: You must play both numbers of a roll if it is legally possible.
+
+The "Greater" Rule: If you can play one number OR the other, but not both, you must play the larger number. For example, if you roll a 6 and a 2, and you can move a 6 or a 2 but not both, you are legally required to move the 6.
+
+Forced Moves with Doubles
+Four Moves: When you roll doubles (e.g., 4-4), you have four moves of the dice value giving 4 separate moves. 
+
+Maximum Capability: You must play as many of those four moves as possible. If you can only find three legal spots to move, you play those three and forfeit the fourth. If you can only play one, you play that one.
+
+Being "Closed Out"
+The Exception: The only time you "pass" a turn is if no legal moves exist.
+
+Blocked on the Bar: This most commonly happens when you have a checker on the bar and your opponent has "closed" their home board (meaning they have two or more checkers on all six points where you could potentially land).
+
+No Entry: Since you cannot move any other checkers until the one on the bar is back in play, and there are no open points to enter, your turn is simply skipped. You don't even roll the dice in some competitive formats if the board is fully closed.
+
+Bearing Off Constraints
+Exact Rolls: When bearing off, if you roll a number and have a checker on that specific point, you must move it off.
+
+Moving Within the Board: If you roll a 2, you can choose to move a checker from the 6-point to the 4-point instead of bearing a checker off the 2-point—unless that is your only legal move. You always have the choice of how to spend the pips as long as the move is legal.
+
+Hitting and Entering
+Blots: A single checker on a point is called a blot. It is vulnerable!
+
+Hitting: If you land on an opponent's blot, their checker is "hit" and placed on the bar (the middle divider of the board).
+
+The Bar: If you have a checker on the bar, you must bring it back into play before you can move any other checkers. You enter by rolling the dice and landing on an open point in your opponent’s home board.
+
+Bearing Off
+Home Sweet Home: You cannot begin bearing off checkers until all 15 of your checkers are inside your home board.
+
+Exit Strategy: You bear off by rolling a number that corresponds to the point a checker is on. For example, a roll of 3 allows you to remove a checker from the 3-point.
+
+Highest Point: If you roll a number higher than any point currently occupied (e.g., you roll a 6 but your highest checker is on the 4-point), you may remove a checker from the highest occupied point.
+
+Winning the Game
+Single Game: You win a single game if you bear off all checkers before your opponent.
+
+Gammon: If you bear off all your checkers before your opponent has borne off even one, you win a Gammon (double the stakes/points).
+
+Backgammon: If you finish while your opponent still has a checker in your home board or on the bar, you win a Backgammon (triple the stakes/points).
+
+the board
+points are numbered 1 through 24, starting from your opponent's home board and ending at your own. Here is the standard starting layout:
+
+The Checker Placement
+Each player sets up their 15 checkers as follows:
+
+2 checkers on your 24-point (your opponent's 1-point).
+
+5 checkers on your 13-point (the "midpoint").
+
+3 checkers on your 8-point.
+
+5 checkers on your 6-point.
+for a total of 15 checkers for each player
+
+the bar
+The Bar: The middle strip dividing the board. No checkers start here; they only go here when "hit."
+
+api response handling
+this is the message that will be sent to the ai agent each time it needs to make a move:
+Role: You are a professional Backgammon AI engine. Your goal is to analyze the board state and return the optimal legal move.
+Game Rules & Logic:
+- Movement: You always move checkers from lower indices toward higher indices (0 → 23 → 99).
+- Blocking: You cannot land on a point occupied by 2 or more opponent checkers (negative integers).
+- Hitting: If you land on a point with exactly -1, the opponent's checker is moved to their bar. You must set "hit": true in your response.
+- The Bar: If your bar.active is > 0, you must move those checkers back onto the board (entering at indices 0–5) before moving any other checkers.
+- Bearing Off: You may only move checkers to index 99 if all your remaining checkers are located between indices 18 and 23.
+- Forced Moves: You must use the maximum number of dice pips possible. If you can only use one die, you must use the larger one.
+Board State Format: The user will provide a JSON object:
+- board: Array of 24 integers. Positive integers are your checkers. Negative integers are your opponent's.
+- dice: Array of 2 integers representing the roll.
+- bar: Object with active (your checkers on bar) and opponent (theirs).
+- off: Object with active (your checkers removed) and opponent (theirs).
+Response Format: Return a JSON object only. No conversational text, no markdown code blocks.
+- Variable Move Count: 2 moves for standard rolls, 4 for doubles. If blocked, return only the possible legal moves (0–4).
+- Special Indices: Use -1 for from when entering from the bar. Use 99 for to when bearing off. Use 0–23 for board points.
+JSON Schema:
+{
+  "move_notation": "string",
+  "moves": [
+    {
+      "from": integer,
+      "to": integer,
+      "hit": boolean
+    }
+  ],
+  "strategy_short": "string"
+}
+Display rules
+Make the board columns look like triangles
+Keep 20px space between columns
+make sure the bar is visible and can fit checkers on it for when they are on the bar
+make sure there is enough space on the right side that will be the area where checkers that have been taken off need to be
+have an indicator of whose turn it is
+highlight legal moves when the player picks up a checker
+Dice display showing which dice are still unused during the players turn
+after the ai move animate the moves it made and have a little section the player can see the "strategy_short" the ai agent returns in the json
+
+prompt 1:
+add a validation process for the ai moves if the move is illegal retry up to 3 times if the ai hasnt managed to make a legal move pick a random legal move
+the validation should include:
+The bar Priority Check The Destination Check (Point Availability) The Path/Dice Consistency Check The "Forced Move" Exhaustion Check Bearing Off Validation
+
+( debugging the api call prompt to make legal move): added
+the only in bound moves are 0-23 use 99 for bearing off
+
+prompt 2 (still debugging the api prompt):
+add to the api prompt an example to the starting positions and tell it it needs to move toward index 23
+
+prompt 3 leave ai alone fix the points rendering (right side only showing 4.5):
+right now the on the right side there are only 4 and a halfish triangles instead of 6 (link to ingame photo)
+
+prompt 4:
+add a log for each dice roll and the  board state before the ai turn
+
+prompt 5:
+Make the error message returned to the AI more specific. Clarify why the AI move got rejected — 
+for example: 'occupied by 2+ opponent checkers, cannot hit' when trying to hit on a blocked index. 
+Also include the available dice values in the rejection message."
+
+prompt 6:
+change the validation code so the user checkers are positive and the ai checkers are negative
+
+prompt 7:
+add a clear out of bounds error to the validation process 
+
+prompt 8 moving away from letting the agent calculate the moves and giving it a set of options to pick from it (building the algorithm to get all the legal moves):
+write an algorithm that takes the board state as input calculating each legal move the ai can make make sure it 
+can handle regular rolls and double all while accounting for each change of the board after each submove
+
+prompt 9 integrating the algorithm into the ai prompt:
+change the ai prompt to this: Role: You are a professional Backgammon strategy engine. Your objective is to analyze a game state and select the best possible move combination from a provided list of legal options. Strategic Overview: * Objective: Your goal is to move all your checkers (NEGATIVE integers) toward index 23 and then bear them off (to index 99). * Priorities: Focus on creating "primes" (consecutive points with 2+ checkers) to block the opponent, hitting vulnerable opponent blots (POSITIVE integers), and escaping your back checkers from the early indices (0–5). * Game Logic: You understand that standard backgammon strategy applies. You are evaluating moves based on their probability of winning or achieving a "Gammon." Board State Format: * board: Array of 24 integers. NEGATIVE values are your checkers. POSITIVE values are the opponent's. * bar: { active: your checkers on bar, opponent: theirs }. * off: { active: your checkers borne off, opponent: theirs }. * legal_move_combinations: A list of arrays. Each array represents a full turn (using all available dice). Task: 1. Analyze the board and legal_move_combinations. 2. Select the single best move combination based on high-level strategy. 3. You MUST pick one of the provided combinations. Do not invent moves. Response Format: Return a JSON object ONLY. No markdown, no code fences, no conversational text. JSON Schema: {   "move_notation": "string",   "moves": [     {       "from": integer,       "to": integer,       "hit": boolean     }   ],   "strategy_short": "string" } your legal move combinations will look like this: "legal_move_combinations": [ [{"from": 0, "to": 3}, {"from": 11, "to": 16}], [{"from": 0, "to": 5}, {"from": 16, "to": 19}], ... ]
+make sure the prompt will send the ai moveset it can understand and use and make sure the format it tell it to return is the one compatiable with the app
