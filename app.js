@@ -674,20 +674,51 @@ const checkWin = (s, player) => player === HUMAN ? s.off.human === 15 : s.off.ai
 // ── AI Turn ───────────────────────────────────────────────────────────────────
 const MAX_AI_RETRIES = 3;
 
+// Returns the sequence from `sequences` whose {from,to} pairs match `moves`, or null
+const findMatchingSequence = (sequences, moves) =>
+  sequences.find(seq =>
+    seq.length === moves.length &&
+    seq.every((m, i) => m.from === moves[i].from && m.to === moves[i].to)
+  ) ?? null;
+
 const doAITurn = async () => {
   const dice = rollDice();
   state.dice = dice;
   state.usedDice = [];
   renderDice();
 
-  const boardJson = JSON.stringify({ board: state.board, dice, bar: { active: state.bar.ai, opponent: state.bar.human }, off: { active: state.off.ai, opponent: state.off.human } });
-  console.log('[AI turn] dice:', dice, '| board:', [...state.board], '| bar:', { ...state.bar }, '| off:', { ...state.off });
+  // Compute all legal move sequences up-front
+  const sequences = getAllAIMoveSequences(state.board, state.bar.ai, dice);
+  const hasNoMoves = sequences.length === 0 || (sequences.length === 1 && sequences[0].length === 0);
+
+  console.log('[AI turn] dice:', dice, '| board:', [...state.board], '| bar:', { ...state.bar }, '| off:', { ...state.off }, '| legal sequences:', sequences.length);
+
+  if (hasNoMoves) {
+    // No legal moves — skip turn immediately
+    state.dice = [];
+    state.usedDice = [];
+    state.currentTurn = HUMAN;
+    $('roll-btn').disabled = false;
+    $('ai-strategy-text').textContent = '(no legal moves — turn passed)';
+    $('ai-strategy-box').classList.remove('hidden');
+    renderAll();
+    return;
+  }
+
+  // Format combinations for the prompt: strip internal dieValue, keep from/to/hit
+  const legalCombinations = sequences.map(seq => seq.map(({ from, to, hit }) => ({ from, to, hit })));
+  const boardJson = JSON.stringify({
+    board: state.board,
+    bar: { active: state.bar.ai, opponent: state.bar.human },
+    off: { active: state.off.ai, opponent: state.off.human },
+    legal_move_combinations: legalCombinations,
+  });
 
   let validMoves = null;
   let strategyText = '';
   let lastError = '';
 
-  // Attempt up to MAX_AI_RETRIES times; on each retry pass the validation error back
+  // Attempt up to MAX_AI_RETRIES times; on each retry pass the rejection reason back
   await Array.from({ length: MAX_AI_RETRIES }).reduce(
     (chain, _, attempt) => chain.then(async () => {
       if (validMoves !== null) return; // already succeeded
@@ -695,12 +726,13 @@ const doAITurn = async () => {
         const response = await callOpenAI(boardJson, attempt > 0 ? lastError : '');
         const parsed = parseAIResponse(response);
         const moves = parsed.moves || [];
-        const { isValid, errors } = validateAIMoveSequence(state.board, state.bar.ai, dice, moves);
-        if (isValid) {
-          validMoves = moves;
+        const matched = findMatchingSequence(sequences, moves);
+        if (matched) {
+          validMoves = matched; // use our precomputed sequence (hit values guaranteed correct)
           strategyText = parsed.strategy_short || '';
         } else {
-          lastError = errors.join(' | ');
+          const returned = moves.map(m => `${m.from}→${m.to}`).join(', ');
+          lastError = `Returned moves [${returned}] did not match any entry in legal_move_combinations. You MUST copy one combination exactly from the legal_move_combinations list — do not invent or modify moves.`;
           console.warn(`AI move validation failed (attempt ${attempt + 1}): ${lastError}`);
         }
       } catch (err) {
@@ -711,7 +743,7 @@ const doAITurn = async () => {
     Promise.resolve()
   );
 
-  // Fallback: generate random legal moves if all retries failed
+  // Fallback: pick a random legal sequence if all retries failed
   if (validMoves === null) {
     console.warn(`All ${MAX_AI_RETRIES} AI attempts failed — using random fallback`);
     validMoves = pickRandomAIMoves(state.board, state.bar.ai, dice);
@@ -736,44 +768,35 @@ const doAITurn = async () => {
 };
 
 const callOpenAI = async (boardJson, errorContext = '') => {
-  const systemPrompt = `Role: You are a professional Backgammon AI engine. Your goal is to analyze the board state and return the optimal legal move.
+  const systemPrompt = `Role: You are a professional Backgammon strategy engine. Your objective is to analyze a game state and select the best possible move combination from a provided list of legal options.
 
-CRITICAL — Direction of Play:
-YOU (the AI) always move checkers from LOWER indices toward HIGHER indices: 0 → 1 → 2 → ... → 23 → bear off (99).
-A move from index 5 with die value 3 lands on index 8. A move from index 20 with die value 4 lands on index 24 which means bear off (99).
-NEVER move backward (never decrease the index). Every "to" must be greater than "from" (or 99 for bear-off).
-When from + die = 24, that is NOT a valid board index. If all your checkers are in the home board (indices 18-23), use 99 for bearing off. Otherwise, you must choose a different move!!!
+Strategic Overview:
+* Objective: Your goal is to move all your checkers (NEGATIVE integers) toward index 23 and then bear them off (to index 99).
+* Priorities: Focus on creating "primes" (consecutive points with 2+ checkers) to block the opponent, hitting vulnerable opponent blots (POSITIVE integers), and escaping your back checkers from the early indices (0–5).
+* Game Logic: You understand that standard backgammon strategy applies. You are evaluating moves based on their probability of winning or achieving a "Gammon."
 
-Starting Position Example (game start):
-board: [-2,0,0,0,0,5, 0,3,0,0,0,-5, 5,0,0,0,-3,0,-5,0,0,0,0,2]
-  - Your checkers (NEGATIVE): -2 at index 0, -5 at index 11, -3 at index 16, -5 at index 18
-  - Opponent (human) checkers (POSITIVE): 5 at index 5, 3 at index 7, 5 at index 12, 2 at index 23
-  - Your goal: move all your checkers from their current indices toward index 23, then bear off to 99.
-  - Your home board for bearing off is indices 18–23.
+Board State Format:
+* board: Array of 24 integers. NEGATIVE values are your checkers. POSITIVE values are the opponent's.
+* bar: { active: your checkers on bar, opponent: theirs }.
+* off: { active: your checkers borne off, opponent: theirs }.
+* legal_move_combinations: A list of arrays. Each array represents a full turn (using all available dice).
 
-Game Rules & Logic:
-- Movement: Always increase the index. from=5, die=4 → to=9. from=21, die=3 → to=24 means bear off (use 99).
-- Blocking: You cannot land on a point where the opponent has 2 or more checkers (values >= 2).
+Task:
+1. Analyze the board and legal_move_combinations.
+2. Select the single best move combination based on high-level strategy.
+3. You MUST pick one of the provided combinations. Do not invent moves.
 
-- Hitting: If you land on a point with exactly 1 (one opponent checker), it is hit and goes to the bar. Set "hit": true.
-- The Bar: If bar.active > 0, your first move(s) must re-enter from the bar using from=-1, landing at indices 0–5 (die value maps to index: die 1 → index 0, die 2 → index 1, ..., die 6 → index 5).
-- Bearing Off: You may only use to=99 when ALL your checkers (board + bar) are at indices 18–23. Exact removal: from + die = 24. Overshoot: die > (24 - from) is only legal from the lowest-indexed occupied point.
-- Forced Moves: Use the maximum number of dice pips possible. With a standard roll, play both dice if legal. With doubles, play all four. If only one die can be played, play the larger one.
-
-Board State Format (JSON sent by user):
-- board: Array of 24 integers (index 0–23). NEGATIVE = your (AI) checkers. POSITIVE = opponent (human) checkers. Zero = empty. Valid move destinations: 0–23 or 99 (bear-off only).
-- dice: Array of integers (2 for normal, 4 for doubles).
-- bar: { active: your checkers on bar, opponent: their checkers on bar }
-- off: { active: your checkers borne off, opponent: theirs }
-
-Response Format: Return a JSON object ONLY. No markdown, no code fences, no explanation text.
-- moves array length: 2 for normal roll, 4 for doubles, fewer only if legally blocked.
+Response Format: Return a JSON object ONLY. No markdown, no code fences, no conversational text.
 JSON Schema:
 {
   "move_notation": "string",
   "moves": [{"from": integer, "to": integer, "hit": boolean}],
   "strategy_short": "string"
 }`;
+
+  const userContent = errorContext
+    ? `${boardJson}\n\nYour previous response was rejected: ${errorContext}\nPick a different combination from legal_move_combinations.`
+    : boardJson;
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -782,7 +805,7 @@ JSON Schema:
       model: MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: errorContext ? `${boardJson}\n\nYour previous response was rejected. Validation error: ${errorContext}\nPlease return a corrected legal move sequence.` : boardJson },
+        { role: 'user', content: userContent },
       ],
       temperature: 0.2,
     }),
