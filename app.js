@@ -633,8 +633,8 @@ NEVER move backward (never decrease the index). Every "to" must be greater than 
 
 Starting Position Example (game start, your checkers are positive):
 board: [-2,0,0,0,0,5, 0,3,0,0,0,-5, 5,0,0,0,-3,0,-5,0,0,0,0,2]
-  - Your checkers (positive): 5 at index 5, 3 at index 7, 5 at index 12, 2 at index 23
-  - Opponent checkers (negative): 2 at index 0, 5 at index 11, 3 at index 16, 5 at index 18
+  - Your checkers (negative): 2 at index 0, 5 at index 11, 3 at index 16, 5 at index 18
+  - Opponent checkers (positive): 5 at index 5, 3 at index 7, 5 at index 12, 2 at index 23
   - Your goal: move all your checkers from their current indices toward index 23, then bear off to 99.
   - Your home board for bearing off is indices 18–23.
 
