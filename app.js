@@ -345,30 +345,106 @@ const getLegalMovesAI = (board, aiBarActive, diceValues) => {
   return moves;
 };
 
-// Greedily picks random legal moves, consuming max possible dice
-const pickRandomAIMoves = (board, aiBarActive, diceValues) => {
-  const b = [...board];
-  let barActive = aiBarActive;
-  let remaining = [...diceValues];
-  const chosen = [];
+/*
+  getAllAIMoveSequences — full legal move tree enumeration.
 
-  let keepGoing = true;
-  while (keepGoing && remaining.length > 0) {
-    const legal = getLegalMovesAI(b, barActive, remaining);
-    if (legal.length === 0) { keepGoing = false; break; }
-    const move = legal[Math.floor(Math.random() * legal.length)];
-    chosen.push({ from: move.from, to: move.to, hit: move.hit });
-    // Apply to simulation
-    if (move.from === -1) { barActive--; } else { b[move.from]++; } // remove AI checker (less negative)
-    if (move.to === BEAR_OFF_INDEX) {
-      // nothing extra
-    } else {
-      if (b[move.to] === 1) b[move.to] = 0; // hit human blot
-      b[move.to]--; // add AI checker (more negative)
+  Performs a recursive DFS over all ways to consume the dice, returning every
+  distinct complete move sequence the AI can legally play.
+
+  Board convention: human = positive, AI = negative. AI moves 0 → 23 → bear-off (99).
+
+  Rules enforced:
+    • Bar priority   — bar checkers must be entered before any board move
+    • Board changes  — each sub-move is applied to a cloned board before recursing,
+                       so later sub-moves see the updated positions
+    • Max dice usage — only sequences that exhaust the most dice are returned
+    • Higher-die rule — if only 1 of 2 distinct dice can be played, sequences
+                        using the higher die take precedence
+    • Deduplication  — sequences that produce identical board states are collapsed
+                       to one (eliminates redundant orderings from doubles)
+
+  Each move in a returned sequence: { from, to, hit, dieValue }
+  'dieValue' is the die face consumed by that sub-move.
+*/
+const getAllAIMoveSequences = (board, aiBarActive, diceValues) => {
+  // ── DFS: returns all complete sequences reachable from (b, bar, remaining) ──
+  const search = (b, bar, remaining) => {
+    const singleMoves = getLegalMovesAI(b, bar, remaining);
+    if (singleMoves.length === 0) return [[]]; // terminal — no more moves
+
+    // Deduplicate at this level: same (from, to, dieValue) explored only once
+    const seen = new Set();
+    const uniqueMoves = singleMoves.filter(({ from, to, diceIndex }) => {
+      const key = `${from}:${to}:${remaining[diceIndex]}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const result = [];
+    for (const move of uniqueMoves) {
+      // Clone board and apply sub-move
+      const nb = [...b];
+      let nbar = bar;
+      if (move.from === -1) { nbar--; } else { nb[move.from]++; } // remove AI checker
+      if (move.to !== BEAR_OFF_INDEX) {
+        if (nb[move.to] === 1) nb[move.to] = 0; // hit human blot
+        nb[move.to]--; // place AI checker
+      }
+
+      const nRemaining = remaining.filter((_, i) => i !== move.diceIndex);
+      const head = { from: move.from, to: move.to, hit: move.hit, dieValue: remaining[move.diceIndex] };
+      for (const tail of search(nb, nbar, nRemaining)) {
+        result.push([head, ...tail]);
+      }
     }
-    remaining = remaining.filter((_, i) => i !== move.diceIndex);
+    return result;
+  };
+
+  const allSeqs = search([...board], aiBarActive, [...diceValues]);
+  if (allSeqs.length === 0) return [];
+
+  // ── Keep only max-length sequences (must use as many dice as possible) ──────
+  const maxLen = allSeqs.reduce((m, s) => Math.max(m, s.length), 0);
+  let best = allSeqs.filter(s => s.length === maxLen);
+
+  // ── Higher-die rule: if only 1 die playable from a 2-die roll with distinct
+  //    values, sequences using the higher die take precedence ──────────────────
+  if (maxLen === 1 && diceValues.length === 2 && diceValues[0] !== diceValues[1]) {
+    const higherDie = Math.max(diceValues[0], diceValues[1]);
+    const highOnly = best.filter(s => s[0].dieValue === higherDie);
+    if (highOnly.length > 0) best = highOnly;
   }
-  return chosen;
+
+  // ── Deduplicate by resulting board state ────────────────────────────────────
+  // Doubles often yield many sequences that leave the board in the same state.
+  const boardStateAfter = (seq) => {
+    const nb = [...board];
+    let bar = aiBarActive;
+    for (const m of seq) {
+      if (m.from === -1) { bar--; } else { nb[m.from]++; }
+      if (m.to !== BEAR_OFF_INDEX) {
+        if (nb[m.to] === 1) nb[m.to] = 0;
+        nb[m.to]--;
+      }
+    }
+    return nb.join(',') + '|' + bar;
+  };
+
+  const statesSeen = new Set();
+  return best.filter(seq => {
+    const key = boardStateAfter(seq);
+    if (statesSeen.has(key)) return false;
+    statesSeen.add(key);
+    return true;
+  });
+};
+
+// Picks a random sequence from the full legal move tree (replaces greedy fallback)
+const pickRandomAIMoves = (board, aiBarActive, diceValues) => {
+  const sequences = getAllAIMoveSequences(board, aiBarActive, diceValues);
+  if (sequences.length === 0) return [];
+  return sequences[Math.floor(Math.random() * sequences.length)];
 };
 
 /*
