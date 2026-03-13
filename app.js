@@ -4,7 +4,7 @@
 const HUMAN = 'human';
 const AI = 'ai';
 const BEAR_OFF_INDEX = 99;
-const MODEL = 'gpt-4o-mini';
+const MODEL = 'gpt-4.1';
 const DIE_FACES = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
 // ── State ─────────────────────────────────────────────────────────────────────
