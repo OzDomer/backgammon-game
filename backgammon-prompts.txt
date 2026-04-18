@@ -174,3 +174,27 @@ can handle regular rolls and double all while accounting for each change of the 
 prompt 9 integrating the algorithm into the ai prompt:
 change the ai prompt to this: Role: You are a professional Backgammon strategy engine. Your objective is to analyze a game state and select the best possible move combination from a provided list of legal options. Strategic Overview: * Objective: Your goal is to move all your checkers (NEGATIVE integers) toward index 23 and then bear them off (to index 99). * Priorities: Focus on creating "primes" (consecutive points with 2+ checkers) to block the opponent, hitting vulnerable opponent blots (POSITIVE integers), and escaping your back checkers from the early indices (0–5). * Game Logic: You understand that standard backgammon strategy applies. You are evaluating moves based on their probability of winning or achieving a "Gammon." Board State Format: * board: Array of 24 integers. NEGATIVE values are your checkers. POSITIVE values are the opponent's. * bar: { active: your checkers on bar, opponent: theirs }. * off: { active: your checkers borne off, opponent: theirs }. * legal_move_combinations: A list of arrays. Each array represents a full turn (using all available dice). Task: 1. Analyze the board and legal_move_combinations. 2. Select the single best move combination based on high-level strategy. 3. You MUST pick one of the provided combinations. Do not invent moves. Response Format: Return a JSON object ONLY. No markdown, no code fences, no conversational text. JSON Schema: {   "move_notation": "string",   "moves": [     {       "from": integer,       "to": integer,       "hit": boolean     }   ],   "strategy_short": "string" } your legal move combinations will look like this: "legal_move_combinations": [ [{"from": 0, "to": 3}, {"from": 11, "to": 16}], [{"from": 0, "to": 5}, {"from": 16, "to": 19}], ... ]
 make sure the prompt will send the ai moveset it can understand and use and make sure the format it tell it to return is the one compatiable with the app
+
+prompt 10 revisiting the project after some time of gaining more experience and knowledge in programming:
+The project has three files — app.js (game logic + rendering), style.css (all styling), index.html (DOM structure with divs/classes for each backgammon component). A screenshot of the current state is attached. Look at @backgammon-prompts.txt   for more in depth context as well 
+Structural changes (HTML + any JS rendering references):
+
+Move the AI bear-off tray from the left side to the top of the board
+Move the human bear-off tray from the right side to the bottom of the board
+Move the AI Strategy display section to the top, above or near the AI bear-off area
+Fix point numbering — the bar (middle divider) should not be counted as a point index. Points should be 0-11 on one half and 12-23 on the other, bar is just visual space between them
+
+Design overhaul (CSS) use @frontend-design.md  
+
+Modern, clean, dark theme
+Better contrast between the page background, board frame, and playing surface
+Clean typography — readable point numbers, status text, labels
+Style the bear-off trays to look intentional and polished, not squeezed in
+Clean up the buttons (Roll Dice, etc.) to match the new theme
+The status bar and AI strategy box should have visual hierarchy, not plain text
+
+Critical constraints:
+
+Do not break any JS game logic, drag-and-drop, or rendering functions
+Any DOM elements referenced by ID in app.js must keep their IDs or be updated in both HTML and JS
+List any element IDs that were moved or renamed so I can verify nothing broke

@@ -75,17 +75,20 @@ const initApiModal = () => {
   Human home = bottom-right (points 1–6, indices 0–5)
   AI home    = top-right    (points 19–24, indices 18–23)
 */
-const TOP_LEFT_POINTS = [13, 14, 15, 16, 17, 18];
-const TOP_RIGHT_POINTS = [19, 20, 21, 22, 23, 24];
-const BOTTOM_LEFT_POINTS = [12, 11, 10, 9, 8, 7];
-const BOTTOM_RIGHT_POINTS = [6, 5, 4, 3, 2, 1];
+// Point indices (0–23). Bar is purely visual — not counted as an index.
+// Visual layout L→R per half-row:
+//   Top:    12 13 14 15 16 17 | bar | 18 19 20 21 22 23
+//   Bottom: 11 10  9  8  7  6 | bar |  5  4  3  2  1  0
+const TOP_LEFT_INDICES = [12, 13, 14, 15, 16, 17];
+const TOP_RIGHT_INDICES = [18, 19, 20, 21, 22, 23];
+const BOTTOM_LEFT_INDICES = [11, 10, 9, 8, 7, 6];
+const BOTTOM_RIGHT_INDICES = [5, 4, 3, 2, 1, 0];
 
-const buildPointEl = (pointNum, isTop) => {
-  const idx = pointNum - 1;
-  const div = el('div', `point ${isTop ? 'point-top' : 'point-bottom'} ${pointNum % 2 === 0 ? 'point-even' : 'point-odd'}`);
+const buildPointEl = (idx, isTop) => {
+  const div = el('div', `point ${isTop ? 'point-top' : 'point-bottom'} ${idx % 2 === 0 ? 'point-even' : 'point-odd'}`);
   div.dataset.index = idx;
   const numLabel = el('span', 'point-num');
-  numLabel.textContent = pointNum;
+  numLabel.textContent = idx + 1;
   div.appendChild(numLabel);
   return div;
 };
@@ -96,10 +99,10 @@ const initBoard = () => {
   $('bottom-left').innerHTML = '';
   $('bottom-right').innerHTML = '';
 
-  TOP_LEFT_POINTS.forEach(n => $('top-left').appendChild(buildPointEl(n, true)));
-  TOP_RIGHT_POINTS.forEach(n => $('top-right').appendChild(buildPointEl(n, true)));
-  BOTTOM_LEFT_POINTS.forEach(n => $('bottom-left').appendChild(buildPointEl(n, false)));
-  BOTTOM_RIGHT_POINTS.forEach(n => $('bottom-right').appendChild(buildPointEl(n, false)));
+  TOP_LEFT_INDICES.forEach(i => $('top-left').appendChild(buildPointEl(i, true)));
+  TOP_RIGHT_INDICES.forEach(i => $('top-right').appendChild(buildPointEl(i, true)));
+  BOTTOM_LEFT_INDICES.forEach(i => $('bottom-left').appendChild(buildPointEl(i, false)));
+  BOTTOM_RIGHT_INDICES.forEach(i => $('bottom-right').appendChild(buildPointEl(i, false)));
 
   setupDropTargets();
 };
@@ -182,7 +185,13 @@ const renderBar = () => {
 const renderOffTrays = () => {
   $('tray-human').innerHTML = '';
   $('tray-ai').innerHTML = '';
-  const miniStyle = chk => { chk.style.width = '26px'; chk.style.height = '26px'; chk.style.marginBottom = '-6px'; };
+  // Horizontal layout: small checkers laid side-by-side with slight overlap
+  const miniStyle = chk => {
+    chk.style.width = '28px';
+    chk.style.height = '28px';
+    chk.style.marginRight = '-10px';
+    chk.style.cursor = 'default';
+  };
   Array.from({ length: state.off.human }).forEach(() => { const c = makeCheckerEl(HUMAN); miniStyle(c); $('tray-human').appendChild(c); });
   Array.from({ length: state.off.ai }).forEach(() => { const c = makeCheckerEl(AI); miniStyle(c); $('tray-ai').appendChild(c); });
 };
