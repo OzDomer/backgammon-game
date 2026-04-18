@@ -708,7 +708,7 @@ const doAITurn = async () => {
   // Format combinations for the prompt: strip internal dieValue, keep from/to/hit
   const legalCombinations = sequences.map(seq => seq.map(({ from, to, hit }) => ({ from, to, hit })));
   const boardJson = JSON.stringify({
-    board: state.board,
+    board: state.board.map(cell => cell * -1),
     bar: { active: state.bar.ai, opponent: state.bar.human },
     off: { active: state.off.ai, opponent: state.off.human },
     legal_move_combinations: legalCombinations,
@@ -782,16 +782,24 @@ Board State Format:
 * legal_move_combinations: A list of arrays. Each array represents a full turn (using all available dice).
 
 Task:
-1. Analyze the board and legal_move_combinations.
-2. Select the single best move combination based on high-level strategy.
-3. You MUST pick one of the provided combinations. Do not invent moves.
+1. Analyze the board state and the provided legal_move_combinations.
+2. Identify the threats you face (opponent blots positioned to hit you, opponent primes forming, your vulnerable checkers).
+3. Identify the opportunities available to you (opponent blots you could hit, points you could make, back checkers you could escape).
+4. Explain your thought process: weigh the threats and opportunities against the available combinations and explain why one combination is best.
+5. Summarize your reasoning in one sentence for display
+6. Select the single best move combination.
+7. You MUST pick one of the provided combinations exactly as given. Do not invent or modify moves.
 
 Response Format: Return a JSON object ONLY. No markdown, no code fences, no conversational text.
 JSON Schema:
 {
+  "board_analysis":"string",
+  "threats_analysis":"string",
+  "opportunities_analysis":"string",
+  "full_reasoning_explanation": "string",
+  "strategy_short": "string",
   "move_notation": "string",
-  "moves": [{"from": integer, "to": integer, "hit": boolean}],
-  "strategy_short": "string"
+  "moves": [{"from": integer, "to": integer, "hit": boolean}]
 }`;
 
   const userContent = errorContext
