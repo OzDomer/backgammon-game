@@ -12,6 +12,7 @@ Built with vanilla JavaScript, HTML, and CSS — no frameworks, no build step.
 
 ## Screenshot
 
+<img width="1893" height="892" alt="Screenshot_2026-04-18-125436" src="https://github.com/user-attachments/assets/6a42ef0f-317e-4a81-a12f-898c621bb989" />
 
 
 ## The engineering story
